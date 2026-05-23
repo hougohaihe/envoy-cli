@@ -19,7 +19,7 @@ const (
 func GenerateKey() (string, error) {
 	buf := make([]byte, KeyLength)
 	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("keygen: failed to read random bytes: %w", err)
+		return "", fmt.Errorf("keygen: failed to generate random key: %w", err)
 	}
 	return hex.EncodeToString(buf), nil
 }
@@ -35,8 +35,8 @@ func DeriveKey(passphrase, salt string) []byte {
 	)
 }
 
-// FingerprintKey returns a short hex fingerprint of a key for display/logging.
+// FingerprintKey returns a short hex fingerprint of a key for identification.
 func FingerprintKey(key string) string {
-	h := sha256.Sum256([]byte(key))
-	return hex.EncodeToString(h[:4])
+	sum := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(sum[:4])
 }
