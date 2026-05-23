@@ -1,25 +1,25 @@
-package crypto
+package crypto_test
 
 import (
 	"encoding/hex"
-	"strings"
 	"testing"
+
+	"github.com/your-org/envoy-cli/internal/crypto"
 )
 
 func TestGenerateKey_Length(t *testing.T) {
-	key, err := GenerateKey()
+	key, err := crypto.GenerateKey()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// KeySize bytes → hex string is 2× as long
-	expected := KeySize * 2
-	if len(key) != expected {
-		t.Errorf("expected key length %d, got %d", expected, len(key))
+	// hex-encoded 32 bytes => 64 chars
+	if len(key) != 64 {
+		t.Errorf("expected key length 64, got %d", len(key))
 	}
 }
 
 func TestGenerateKey_IsHex(t *testing.T) {
-	key, err := GenerateKey()
+	key, err := crypto.GenerateKey()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -29,61 +29,64 @@ func TestGenerateKey_IsHex(t *testing.T) {
 }
 
 func TestGenerateKey_Uniqueness(t *testing.T) {
-	a, _ := GenerateKey()
-	b, _ := GenerateKey()
+	a, _ := crypto.GenerateKey()
+	b, _ := crypto.GenerateKey()
 	if a == b {
-		t.Error("two generated keys should not be equal")
+		t.Error("expected two generated keys to differ")
 	}
 }
 
 func TestDeriveKey_Length(t *testing.T) {
-	key, err := DeriveKey("mysecretpassphrase")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(key) != 32 {
-		t.Errorf("expected 32-byte key, got %d", len(key))
+	key := crypto.DeriveKey("passphrase", "somesalt")
+	if len(key) != crypto.KeyLength {
+		t.Errorf("expected derived key length %d, got %d", crypto.KeyLength, len(key))
 	}
 }
 
 func TestDeriveKey_Deterministic(t *testing.T) {
-	a, _ := DeriveKey("same-pass")
-	b, _ := DeriveKey("same-pass")
+	a := crypto.DeriveKey("secret", "salt123")
+	b := crypto.DeriveKey("secret", "salt123")
 	if string(a) != string(b) {
-		t.Error("DeriveKey should be deterministic for the same passphrase")
+		t.Error("expected DeriveKey to be deterministic for same inputs")
 	}
 }
 
-func TestDeriveKey_DifferentInputs(t *testing.T) {
-	a, _ := DeriveKey("pass-one")
-	b, _ := DeriveKey("pass-two")
+func TestDeriveKey_DifferentSalts(t *testing.T) {
+	a := crypto.DeriveKey("secret", "saltA")
+	b := crypto.DeriveKey("secret", "saltB")
 	if string(a) == string(b) {
-		t.Error("different passphrases should produce different keys")
+		t.Error("expected different salts to produce different keys")
 	}
 }
 
-func TestDeriveKey_EmptyPassphrase(t *testing.T) {
-	_, err := DeriveKey("")
-	if err == nil {
-		t.Error("expected error for empty passphrase")
+func TestDeriveKey_DifferentPassphrases(t *testing.T) {
+	a := crypto.DeriveKey("passA", "salt")
+	b := crypto.DeriveKey("passB", "salt")
+	if string(a) == string(b) {
+		t.Error("expected different passphrases to produce different keys")
 	}
 }
 
-func TestFingerprintKey_Format(t *testing.T) {
-	fp := FingerprintKey("some-key-material")
-	// 4 bytes → 8 hex chars
-	if len(fp) != 8 {
-		t.Errorf("expected fingerprint length 8, got %d", len(fp))
-	}
-	if strings.ToLower(fp) != fp {
-		t.Error("fingerprint should be lowercase hex")
+func TestFingerprintKey_Length(t *testing.T) {
+	fp := crypto.FingerprintKey("somekey")
+	// 8 bytes hex-encoded => 16 chars
+	if len(fp) != 16 {
+		t.Errorf("expected fingerprint length 16, got %d", len(fp))
 	}
 }
 
 func TestFingerprintKey_Deterministic(t *testing.T) {
-	a := FingerprintKey("key")
-	b := FingerprintKey("key")
+	a := crypto.FingerprintKey("mykey")
+	b := crypto.FingerprintKey("mykey")
 	if a != b {
-		t.Error("fingerprint should be deterministic")
+		t.Error("expected FingerprintKey to be deterministic")
+	}
+}
+
+func TestFingerprintKey_Distinct(t *testing.T) {
+	a := crypto.FingerprintKey("keyA")
+	b := crypto.FingerprintKey("keyB")
+	if a == b {
+		t.Error("expected different keys to produce different fingerprints")
 	}
 }

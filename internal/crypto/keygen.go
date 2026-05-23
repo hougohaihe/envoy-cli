@@ -4,39 +4,39 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
-	"io"
+	"fmt"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
 const (
-	// KeySize is the number of random bytes used for key generation.
-	KeySize = 32
+	KeyLength  = 32
+	SaltLength = 16
+	Iterations = 100_000
 )
 
-// GenerateKey produces a cryptographically secure random hex-encoded key
-// suitable for use as a passphrase or shared secret.
+// GenerateKey generates a cryptographically secure random hex-encoded key.
 func GenerateKey() (string, error) {
-	buf := make([]byte, KeySize)
-	if _, err := io.ReadFull(rand.Reader, buf); err != nil {
-		return "", errors.New("keygen: failed to read random bytes: " + err.Error())
+	b := make([]byte, KeyLength)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate key: %w", err)
 	}
-	return hex.EncodeToString(buf), nil
+	return hex.EncodeToString(b), nil
 }
 
-// DeriveKey produces a deterministic 32-byte key from an arbitrary string
-// using SHA-256. Useful for converting user-supplied passphrases into
-// fixed-length keys without storing the passphrase itself.
-func DeriveKey(passphrase string) ([]byte, error) {
-	if passphrase == "" {
-		return nil, errors.New("keygen: passphrase must not be empty")
-	}
-	sum := sha256.Sum256([]byte(passphrase))
-	return sum[:], nil
+// DeriveKey derives a deterministic key from a passphrase and salt using PBKDF2.
+func DeriveKey(passphrase, salt string) []byte {
+	return pbkdf2.Key(
+		[]byte(passphrase),
+		[]byte(salt),
+		Iterations,
+		KeyLength,
+		sha256.New,
+	)
 }
 
-// FingerprintKey returns a short hex prefix of the SHA-256 hash of the given
-// key material, useful for display/logging without exposing the full secret.
+// FingerprintKey returns a short hex fingerprint of the given key material.
 func FingerprintKey(key string) string {
-	sum := sha256.Sum256([]byte(key))
-	return hex.EncodeToString(sum[:4])
+	h := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(h[:8])
 }
