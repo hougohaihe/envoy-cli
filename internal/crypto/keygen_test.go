@@ -14,7 +14,7 @@ func TestGenerateKey_Length(t *testing.T) {
 	}
 	// hex-encoded 32 bytes = 64 chars
 	if len(key) != 64 {
-		t.Errorf("expected key length 64, got %d", len(key))
+		t.Errorf("expected length 64, got %d", len(key))
 	}
 }
 
@@ -29,40 +29,40 @@ func TestGenerateKey_IsHex(t *testing.T) {
 }
 
 func TestGenerateKey_Uniqueness(t *testing.T) {
-	k1, _ := crypto.GenerateKey()
-	k2, _ := crypto.GenerateKey()
-	if k1 == k2 {
-		t.Error("two generated keys should not be equal")
+	a, _ := crypto.GenerateKey()
+	b, _ := crypto.GenerateKey()
+	if a == b {
+		t.Error("expected unique keys, got identical values")
 	}
 }
 
 func TestDeriveKey_Length(t *testing.T) {
 	key := crypto.DeriveKey("passphrase", "somesalt")
-	if len(key) != crypto.KeyLength {
-		t.Errorf("expected derived key length %d, got %d", crypto.KeyLength, len(key))
+	if len(key) != 32 {
+		t.Errorf("expected 32 bytes, got %d", len(key))
 	}
 }
 
 func TestDeriveKey_Deterministic(t *testing.T) {
-	k1 := crypto.DeriveKey("secret", "salt123")
-	k2 := crypto.DeriveKey("secret", "salt123")
-	if string(k1) != string(k2) {
+	a := crypto.DeriveKey("secret", "salt123")
+	b := crypto.DeriveKey("secret", "salt123")
+	if string(a) != string(b) {
 		t.Error("DeriveKey should be deterministic for same inputs")
 	}
 }
 
 func TestDeriveKey_DifferentSalts(t *testing.T) {
-	k1 := crypto.DeriveKey("secret", "salt1")
-	k2 := crypto.DeriveKey("secret", "salt2")
-	if string(k1) == string(k2) {
+	a := crypto.DeriveKey("secret", "salt1")
+	b := crypto.DeriveKey("secret", "salt2")
+	if string(a) == string(b) {
 		t.Error("different salts should produce different keys")
 	}
 }
 
 func TestDeriveKey_DifferentPassphrases(t *testing.T) {
-	k1 := crypto.DeriveKey("pass1", "salt")
-	k2 := crypto.DeriveKey("pass2", "salt")
-	if string(k1) == string(k2) {
+	a := crypto.DeriveKey("pass1", "salt")
+	b := crypto.DeriveKey("pass2", "salt")
+	if string(a) == string(b) {
 		t.Error("different passphrases should produce different keys")
 	}
 }
@@ -76,17 +76,17 @@ func TestFingerprintKey_Length(t *testing.T) {
 }
 
 func TestFingerprintKey_Deterministic(t *testing.T) {
-	fp1 := crypto.FingerprintKey("mykey")
-	fp2 := crypto.FingerprintKey("mykey")
-	if fp1 != fp2 {
+	a := crypto.FingerprintKey("mykey")
+	b := crypto.FingerprintKey("mykey")
+	if a != b {
 		t.Error("fingerprint should be deterministic")
 	}
 }
 
-func TestFingerprintKey_Unique(t *testing.T) {
-	fp1 := crypto.FingerprintKey("key1")
-	fp2 := crypto.FingerprintKey("key2")
-	if fp1 == fp2 {
-		t.Error("different keys should have different fingerprints")
+func TestFingerprintKey_DifferentKeys(t *testing.T) {
+	a := crypto.FingerprintKey("key1")
+	b := crypto.FingerprintKey("key2")
+	if a == b {
+		t.Error("different keys should produce different fingerprints")
 	}
 }
