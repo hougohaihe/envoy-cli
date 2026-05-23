@@ -17,14 +17,14 @@ const (
 
 // GenerateKey generates a cryptographically secure random hex-encoded key.
 func GenerateKey() (string, error) {
-	b := make([]byte, KeyLength)
-	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("generate key: %w", err)
+	buf := make([]byte, KeyLength)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("keygen: failed to read random bytes: %w", err)
 	}
-	return hex.EncodeToString(b), nil
+	return hex.EncodeToString(buf), nil
 }
 
-// DeriveKey derives a deterministic key from a passphrase and salt using PBKDF2.
+// DeriveKey derives a deterministic key from a passphrase and salt using PBKDF2-SHA256.
 func DeriveKey(passphrase, salt string) []byte {
 	return pbkdf2.Key(
 		[]byte(passphrase),
@@ -35,8 +35,8 @@ func DeriveKey(passphrase, salt string) []byte {
 	)
 }
 
-// FingerprintKey returns a short hex fingerprint of the given key material.
+// FingerprintKey returns a short hex fingerprint of a key for display/logging.
 func FingerprintKey(key string) string {
 	h := sha256.Sum256([]byte(key))
-	return hex.EncodeToString(h[:8])
+	return hex.EncodeToString(h[:4])
 }
