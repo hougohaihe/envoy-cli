@@ -69,3 +69,27 @@ func TestVault_Load_FileNotExist(t *testing.T) {
 		t.Error("Load() expected error for missing file, got nil")
 	}
 }
+
+func TestVault_Save_Overwrite(t *testing.T) {
+	path := tempVaultPath(t)
+	v := NewVault(path, "pass")
+
+	if err := v.Save("env1", []byte("FOO=first")); err != nil {
+		t.Fatalf("first Save() error: %v", err)
+	}
+
+	if err := v.Save("env2", []byte("FOO=second")); err != nil {
+		t.Fatalf("second Save() error: %v", err)
+	}
+
+	name, data, err := v.Load()
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if name != "env2" {
+		t.Errorf("Load() name = %q, want %q", name, "env2")
+	}
+	if string(data) != "FOO=second" {
+		t.Errorf("Load() data = %q, want %q", string(data), "FOO=second")
+	}
+}
